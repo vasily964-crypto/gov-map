@@ -9,6 +9,7 @@
       --country-fill: #d0d0d0;
       --country-stroke: #ffffff;
       --country-hover-fill: #ffcc00;
+      --country-has-data-fill: rgba(0, 150, 0, 0.25); /* полупрозрачный зелёный */
       --tooltip-bg: #ffffff;
       --tooltip-border: #333333;
       --tooltip-text: #000000;
@@ -94,6 +95,7 @@
 
     .country.has-data {
       cursor: pointer;
+      fill: var(--country-has-data-fill);
     }
 
     .country.has-data:hover {
