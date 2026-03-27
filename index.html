@@ -647,33 +647,42 @@
   }
 
   function initCountryEvents() {
-    const countries = worldMap.querySelectorAll('.country');
-    countries.forEach(el => {
-      el.addEventListener('mousemove', onCountryMove);
-      el.addEventListener('mouseleave', onCountryLeave);
-    });
+  const countries = worldMap.querySelectorAll('.country');
+  countries.forEach(el => {
+    el.addEventListener('click', onCountryClick);
+  });
+
+  // клик по фону карты скрывает всплывашку
+  mapContainer.addEventListener('click', onMapBackgroundClick);
+}
+
+function onCountryClick(e) {
+  e.stopPropagation(); // не даём всплыть до контейнера
+
+  const target = e.target;
+  const iso = target.id ? target.id.toUpperCase() : null;
+  if (!iso) {
+    hideTooltip();
+    return;
   }
 
-  function onCountryMove(e) {
-    const target = e.target;
-    const iso = target.id ? target.id.toUpperCase() : null;
-    if (!iso) {
-      hideTooltip();
-      return;
-    }
-
-    const row = getCountryRow(iso, currentLang);
-    if (!row || !hasAnyStruct(row)) {
-      hideTooltip();
-      return;
-    }
-
-    showTooltipForCountry(row, iso, e.clientX, e.clientY);
+  const row = getCountryRow(iso, currentLang);
+  if (!row || !hasAnyStruct(row)) {
+    hideTooltip();
+    return;
   }
 
-  function onCountryLeave() {
+  // позиционируем по клику
+  showTooltipForCountry(row, iso, e.clientX, e.clientY);
+}
+
+function onMapBackgroundClick(e) {
+  // если клик был не по стране — скрываем всплывашку
+  const target = e.target;
+  if (!target.classList.contains('country')) {
     hideTooltip();
   }
+}
 
   function showTooltipForCountry(row, iso, clientX, clientY) {
     tooltip.innerHTML = '';
