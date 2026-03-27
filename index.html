@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Карта госдизайна и архитектуры</title>
+  <style>
+    :root {
+      --map-bg: #f5f5f5;
+      --country-fill: #d0d0d0;
+      --country-stroke: #ffffff;
+      --country-hover-fill: #ffcc00;
+      --tooltip-bg: #ffffff;
+      --tooltip-border: #333333;
+      --tooltip-text: #000000;
+      --tooltip-link: #0066cc;
+      --ui-bg: #ffffff;
+      --ui-border: #cccccc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #ffffff;
+      color: #111111;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100%;
+    }
+
+    header {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--ui-border);
+      background: var(--ui-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .lang-switcher {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .lang-switcher button {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--ui-border);
+      background: #f8f8f8;
+      cursor: pointer;
+    }
+
+    .lang-switcher button.active {
+      background: #111111;
+      color: #ffffff;
+      border-color: #111111;
+    }
+
+    .map-container {
+      position: relative;
+      flex: 1;
+      background: var(--map-bg);
+      overflow: hidden;
+    }
+
+    svg#world-map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .country {
+      fill: var(--country-fill);
+      stroke: var(--country-stroke);
+      stroke-width: 0.5;
+      cursor: default;
+      transition: fill 0.15s ease-out;
+    }
+
+    .country.has-data {
+      cursor: pointer;
+    }
+
+    .country.has-data:hover {
+      fill: var(--country-hover-fill);
+    }
+
+    .tooltip {
+      position: absolute;
+      min-width: 260px;
+      max-width: 360px;
+      background: var(--tooltip-bg);
+      border: 1px solid var(--tooltip-border);
+      color: var(--tooltip-text);
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 8px 10px;
+      font-size: 13px;
+      pointer-events: auto;
+      z-index: 10;
+      display: none;
+    }
+
+    .tooltip-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .tooltip-flag {
+      width: 20px;
+      height: 14px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: #eee;
+      flex-shrink: 0;
+    }
+
+    .tooltip-flag img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .tooltip-country {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .tooltip-struct {
+      margin-bottom: 4px;
+    }
+
+    .tooltip-struct-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .tooltip-struct-desc {
+      margin-bottom: 2px;
+    }
+
+    .tooltip-struct-link a {
+      color: var(--tooltip-link);
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    .tooltip-struct-link a:hover {
+      text-decoration: underline;
+    }
+
+    .map-zoom-controls {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 5;
+    }
+
+    .map-zoom-controls button {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      border: 1px solid var(--ui-border);
+      background: var(--ui-bg);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .map-zoom-controls button:active {
+      background: #e5e5e5;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Карта госдизайна и архитектуры</h1>
+    <div class="lang-switcher">
+      <span>Язык:</span>
+      <button data-lang="ru" class="active">RU</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <div class="map-container" id="map-container">
+    <!-- ВСПЛЫВАШКА -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <!-- КНОПКИ ЗУМА -->
+    <div class="map-zoom-controls">
+      <button id="zoom-in">+</button>
+      <button id="zoom-out">−</button>
+    </div>
+
+    <!-- ЗДЕСЬ ДОЛЖНА БЫТЬ ВСТАВЛЕНА SVG-КАРТА МИРА
+         ВАЖНО:
+         - У каждой страны должен быть класс "country"
+         - Идентификатор страны = ISO-код (RU, US, FR и т.д.)
+         Пример одного path:
+         <path id="RU" class="country" d="..."/>
+    -->
+    <svg id="world-map" viewBox="0 0 1000 500">
+      <!-- ВРЕМЕННАЯ ЗАГЛУШКА: программист должен
+           заменить это на полноценную карту мира
+           (например, из simplemaps или другого источника) -->
+      <rect x="0" y="0" width="1000" height="500" fill="#e0e0e0"></rect>
+      <rect id="RU" class="country" x="600" y="80" width="120" height="60"></rect>
+      <rect id="FR" class="country" x="450" y="160" width="40" height="30"></rect>
+      <rect id="CH" class="country" x="470" y="190" width="20" height="12"></rect>
+      <rect id="US" class="country" x="200" y="120" width="120" height="60"></rect>
+    </svg>
+  </div>
+</div>
+
+<script>
+  // === КОНФИГ ===
+
+  // СЮДА ВАШ ПРОГРАММИСТ ВСТАВИТ URL CSV ИЗ GOOGLE SHEETS
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/1_Ua77VcxmwSwozkai5Y8XYlFoNHKFfBXbdaHGGFI4o4/export?format=csv&gid=391750040';
+
+  // Базовый URL флагов (пример для flagcdn.com)
+  const FLAG_BASE_URL = 'https://flagcdn.com';
+
+  const DEFAULT_LANG = 'ru';
+  let currentLang = DEFAULT_LANG;
+
+  // Масштаб карты (очень простой зум: масштабируем весь SVG через transform)
+  let currentScale = 1;
+  const MIN_SCALE = 0.8;
+  const MAX_SCALE = 5;
+  const SCALE_STEP = 0.3;
+
+  // Данные: country_iso -> { [lang]: row }
+  const countryData = {};
+
+  // === УТИЛИТЫ ===
+
+  async function fetchCsv(url) {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.error('Ошибка загрузки CSV', res.status);
+      return '';
+    }
+    return await res.text();
+  }
+
+  function parseCsv(csvText) {
+    const lines = csvText.split('\n').filter(l => l.trim() !== '');
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim());
+    const rows = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const values = parseCsvLine(line);
+      const row = {};
+      headers.forEach((h, index) => {
+        row[h] = values[index] ? values[index].trim() : '';
+      });
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function parseCsvLine(line) {
+    const values = [];
+    let current = '';
+    let insideQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        insideQuotes = !insideQuotes;
+      } else if (ch === ',' && !insideQuotes) {
+        values.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    values.push(current);
+    return values;
+  }
+
+  function buildCountryData(rows) {
+    rows.forEach(row => {
+      const iso = (row.country_iso || '').toUpperCase();
+      const lang = (row.lang || DEFAULT_LANG).toLowerCase();
+      if (!iso) return;
+
+      if (!countryData[iso]) {
+        countryData[iso] = {};
+      }
+      countryData[iso][lang] = row;
+    });
+  }
+
+  function getCountryRow(iso, lang) {
+    const langs = countryData[iso];
+    if (!langs) return null;
+
+    if (langs[lang]) return langs[lang];
+    if (langs[DEFAULT_LANG]) return langs[DEFAULT_LANG];
+    const anyLang = Object.values(langs)[0];
+    return anyLang || null;
+  }
+
+  function getCountryName(row, lang) {
+    if (lang === 'en' && row.country_name_en) return row.country_name_en;
+    if (row.country_name_ru) return row.country_name_ru;
+    return row.country_name_en || row.country_iso || '';
+  }
+
+  function hasAnyStruct(row) {
+    return !!(row.struct1_name || row.struct2_name || row.struct3_name);
+  }
+
+  function getFlagUrl(iso) {
+    const lower = iso.toLowerCase();
+    return `${FLAG_BASE_URL}/${lower}.svg`;
+  }
+
+  // === РАБОТА СО СТРАНИЦЕЙ ===
+
+  const mapContainer = document.getElementById('map-container');
+  const worldMap = document.getElementById('world-map');
+  const tooltip = document.getElementById('tooltip');
+
+  function initZoomControls() {
+    document.getElementById('zoom-in').addEventListener('click', () => {
+      setScale(currentScale + SCALE_STEP);
+    });
+    document.getElementById('zoom-out').addEventListener('click', () => {
+      setScale(currentScale - SCALE_STEP);
+    });
+  }
+
+  function setScale(newScale) {
+    currentScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+    worldMap.style.transformOrigin = '50% 50%';
+    worldMap.style.transform = `scale(${currentScale})`;
+  }
+
+  function initLangSwitcher() {
+    const buttons = document.querySelectorAll('.lang-switcher button');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = btn.dataset.lang;
+        if (lang === currentLang) return;
+        currentLang = lang;
+
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateCountriesHasData();
+        hideTooltip();
+      });
+    });
+  }
+
+  function updateCountriesHasData() {
+    const countries = worldMap.querySelectorAll('.country');
+    countries.forEach(el => {
+      const iso = el.id ? el.id.toUpperCase() : null;
+      if (!iso) {
+        el.classList.remove('has-data');
+        return;
+      }
+
+      const row = getCountryRow(iso, currentLang);
+      if (row && hasAnyStruct(row)) {
+        el.classList.add('has-data');
+      } else {
+        el.classList.remove('has-data');
+      }
+    });
+  }
+
+  function initCountryEvents() {
+    const countries = worldMap.querySelectorAll('.country');
+    countries.forEach(el => {
+      el.addEventListener('mousemove', onCountryMove);
+      el.addEventListener('mouseleave', onCountryLeave);
+    });
+  }
+
+  function onCountryMove(e) {
+    const target = e.target;
+    const iso = target.id ? target.id.toUpperCase() : null;
+    if (!iso) {
+      hideTooltip();
+      return;
+    }
+
+    const row = getCountryRow(iso, currentLang);
+    if (!row || !hasAnyStruct(row)) {
+      hideTooltip();
+      return;
+    }
+
+    showTooltipForCountry(row, iso, e.clientX, e.clientY);
+  }
+
+  function onCountryLeave() {
+    hideTooltip();
+  }
+
+  function showTooltipForCountry(row, iso, clientX, clientY) {
+    tooltip.innerHTML = '';
+
+    const header = document.createElement('div');
+    header.className = 'tooltip-header';
+
+    const flagWrap = document.createElement('div');
+    flagWrap.className = 'tooltip-flag';
+    const flagImg = document.createElement('img');
+    flagImg.src = getFlagUrl(iso);
+    flagImg.alt = iso;
+    flagWrap.appendChild(flagImg);
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'tooltip-country';
+    nameDiv.textContent = getCountryName(row, currentLang);
+
+    header.appendChild(flagWrap);
+    header.appendChild(nameDiv);
+    tooltip.appendChild(header);
+
+    [1, 2, 3].forEach(idx => {
+      const name = row[`struct${idx}_name`];
+      const desc = row[`struct${idx}_desc`];
+      const url = row[`struct${idx}_url`];
+
+      if (!name && !desc && !url) return;
+
+      const block = document.createElement('div');
+      block.className = 'tooltip-struct';
+
+      if (name) {
+        const title = document.createElement('div');
+        title.className = 'tooltip-struct-title';
+        title.textContent = name;
+        block.appendChild(title);
+      }
+
+      if (desc) {
+        const d = document.createElement('div');
+        d.className = 'tooltip-struct-desc';
+        d.textContent = desc;
+        block.appendChild(d);
+      }
+
+      if (url) {
+        const linkDiv = document.createElement('div');
+        linkDiv.className = 'tooltip-struct-link';
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = 'перейти';
+        linkDiv.appendChild(a);
+        block.appendChild(linkDiv);
+      }
+
+      tooltip.appendChild(block);
+    });
+
+    tooltip.style.display = 'block';
+
+    const rect = mapContainer.getBoundingClientRect();
+    const ttRect = tooltip.getBoundingClientRect();
+
+    let left = clientX - rect.left + 10;
+    let top = clientY - rect.top + 10;
+
+    if (left + ttRect.width > rect.width) {
+      left = clientX - rect.left - ttRect.width - 10;
+    }
+    if (top + ttRect.height > rect.height) {
+      top = rect.height - ttRect.height - 10;
+    }
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+
+  function hideTooltip() {
+    tooltip.style.display = 'none';
+  }
+
+  // === ИНИЦИАЛИЗАЦИЯ ===
+
+async function init() {
+  initLangSwitcher();
+  initZoomControls();
+
+  try {
+    const csv = await fetchCsv(CSV_URL);
+    const rows = parseCsv(csv);
+    buildCountryData(rows);
+  } catch (e) {
+    console.error('Ошибка при загрузке/парсинге данных', e);
+  }
+
+  updateCountriesHasData();
+  initCountryEvents();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
