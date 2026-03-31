@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Карта госдизайна и архитектуры</title>
+  <title>Карта госдизайна</title>
   <style>
     :root {
       --map-bg: #f5f5f5;
       --country-fill: #d0d0d0;
       --country-stroke: #ffffff;
       --country-hover-fill: #ffcc00;
-      --country-has-data-fill: rgba(0, 150, 0, 0.25); /* полупрозрачный зелёный */
+      --country-has-data-fill: rgba(0, 150, 0, 0.25);
       --tooltip-bg: #ffffff;
       --tooltip-border: #333333;
       --tooltip-text: #000000;
@@ -206,16 +206,16 @@
   </header>
 
   <div class="map-container" id="map-container">
-    <!-- ВСПЛЫВАШКА -->
+    
     <div class="tooltip" id="tooltip"></div>
 
-    <!-- КНОПКИ ЗУМА -->
+    
     <div class="map-zoom-controls">
       <button id="zoom-in">+</button>
       <button id="zoom-out">−</button>
     </div>
 
-    <!-- ЗДЕСЬ ДОЛЖНА БЫТЬ ВСТАВЛЕНА SVG-КАРТА МИРА
+    <!-- ЗДЕСЬ ВСТАВЛЕНА SVG-КАРТА МИРА
          ВАЖНО:
          - У каждой страны должен быть класс "country"
          - Идентификатор страны = ISO-код (RU, US, FR и т.д.)
@@ -485,9 +485,9 @@
 </div>
 
 <script>
-  // === КОНФИГ ===
 
-  // СЮДА ВАШ ПРОГРАММИСТ ВСТАВИТ URL CSV ИЗ GOOGLE SHEETS
+
+  // Источник данных - табличка в гугле
   const CSV_URL = 'https://docs.google.com/spreadsheets/d/1_Ua77VcxmwSwozkai5Y8XYlFoNHKFfBXbdaHGGFI4o4/export?format=csv&gid=391750040';
 
   // Базовый URL флагов (пример для flagcdn.com)
